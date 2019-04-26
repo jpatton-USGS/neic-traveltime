@@ -7,6 +7,8 @@
 
 plugins {
     id 'java'
+    // google java format
+    // id 'com.github.sherter.google-java-format' version '0.8'   
 }
 
 sourceCompatibility = '1.8'
@@ -18,8 +20,12 @@ repositories {
 }
 
 dependencies {
+    // Use JUnit test framework
+    testCompile "junit:junit-dep:4.11"
+    // com.googlecode.json.simple
+    compile "com.googlecode.json-simple:json-simple:1.1.1"
     // org.apache.commons.math3
-    compile files("lib/commons-math3-3.6.1.jar")
+    compile "org.apache.commons:commons-math3:3.6.1"
 }
 
 sourceSets {
@@ -30,7 +36,63 @@ sourceSets {
     }
 }
 
+// Note: To reformat all java code (not in lib) into the 
+// google java style, run ./gradlew goJF
+//googleJavaFormat {
+//  exclude 'lib/**'
+//}
+// Google java style is checked automatically as part of the check task
+// project.tasks.check.dependsOn(verifyGoogleJavaFormat)
+
+// coverage reports
+//jacoco {
+//  toolVersion "0.8.2"
+//}
+//jacocoTestReport {
+ // reports {
+  //  html.enabled true
+   // xml.enabled true
+ // }
+
+  // exclude librarys 
+//  afterEvaluate {
+ //       classDirectories = files(classDirectories.files.collect {
+  //          fileTree(dir: it, exclude: [
+   //                 'gov/usgs/processingformats/**'
+    //        ])
+     //   })
+//    }
+//}
+//check.dependsOn jacocoTestReport
+
+//test {
+ // filter {
+ //   includeTestsMatching "*Test"
+ // }
+//}
+
+// show compile warnings
+tasks.withType(JavaCompile) {
+  options.setDeprecation(true);
+  options.setWarnings(true);
+}
+
+// copy required model files
+task copyModelFiles(type: Copy) {
+  description 'Copies required model files to build directory.'
+  from "models"
+  exclude "README.txt"
+  into "$buildDir/models"
+}
+
+// make sure we always copy models prior to complile
+defaultTasks 'copyModelFiles'
+compileJava.dependsOn 'copyModelFiles'
+
 // create javadocs
 javadoc {
-  options.addBooleanOption('html5', true)
+  exclude "gov/usgs/processingformats/**"
+  if(JavaVersion.current() != JavaVersion.VERSION_1_8) {
+    options.addBooleanOption('html5', true)
+  }
 }
