@@ -42,7 +42,7 @@ googleJavaFormat {
   exclude 'lib/**'
 }
 // Google java style is checked automatically as part of the check task
-project.tasks.check.dependsOn(verifyGoogleJavaFormat)
+//project.tasks.check.dependsOn(verifyGoogleJavaFormat)
 
 // coverage reports
 //jacoco {
