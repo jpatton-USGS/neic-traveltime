@@ -15,9 +15,9 @@ public class UpDataRef implements Serializable {
   private static final long serialVersionUID = 1L;
   final char typeUp; // Type of up-going branches
   final double[] pTauUp; // Slowness grid for this branch
-  final double[][] tauUp; // Tau for up-going branches by depth
+  final double[][] upgoingTau; // Tau for up-going branches by depth
   final double[] pXUp; // Slownesses for branch end points
-  final double[][] xUp; // Distances for branch ends by depth
+  final double[][] upgoingDistance; // Distances for branch ends by depth
 
   /**
    * Load data from the FORTRAN file reader up-going branchs of one type. The file data should have
@@ -41,21 +41,21 @@ public class UpDataRef implements Serializable {
     // The ray parameter for the up-going branches should be truncated
     // at the source slowness, but are not due to the way FORTRAN arrays
     // are dimensioned.
-    tauUp = new double[in.numRec[i]][];
-    xUp = new double[in.numRec[i]][];
+    upgoingTau = new double[in.numRec[i]][];
+    upgoingDistance = new double[in.numRec[i]][];
     for (int j = 0; j < in.numRec[i]; j++) {
-      for (k = 1; k < in.tauUp[i][j].length; k++) {
-        if (in.tauUp[i][j][k] == 0d) {
+      for (k = 1; k < in.upgoingTau[i][j].length; k++) {
+        if (in.upgoingTau[i][j][k] == 0d) {
           break;
         }
       }
-      tauUp[j] = Arrays.copyOf(in.tauUp[i][j], k);
-      for (k = 1; k < in.xUp[i][j].length; k++) {
-        if (in.xUp[i][j][k] == 0d) {
+      upgoingTau[j] = Arrays.copyOf(in.upgoingTau[i][j], k);
+      for (k = 1; k < in.upgoingDistance[i][j].length; k++) {
+        if (in.upgoingDistance[i][j][k] == 0d) {
           break;
         }
       }
-      xUp[j] = Arrays.copyOf(in.xUp[i][j], k);
+      upgoingDistance[j] = Arrays.copyOf(in.upgoingDistance[i][j], k);
     }
   }
 
@@ -78,21 +78,21 @@ public class UpDataRef implements Serializable {
 
     // Set the outer dimension.
     n = finModel.intsRealSize(typeUp);
-    tauUp = new double[n][];
-    xUp = new double[n][];
+    upgoingTau = new double[n][];
+    upgoingDistance = new double[n][];
 
     // Fill in the arrays.
     for (int i = 0; i < finModel.intsSize(typeUp) - 3; i++) {
       if (finModel.getTauInt(typeUp, i) != null) {
         // Tau is easy.
         n = finModel.getTauInt(typeUp, i).length;
-        tauUp[++k] = Arrays.copyOf(finModel.getTauInt(typeUp, i), n);
+        upgoingTau[++k] = Arrays.copyOf(finModel.getTauInt(typeUp, i), n);
         // We have to do this the hard way since we can't use toArray to go
         // from Double to double.
         xUpTmp = finModel.getXUp(typeUp, i);
-        xUp[k] = new double[xUpTmp.size()];
+        upgoingDistance[k] = new double[xUpTmp.size()];
         for (int j = 0; j < xUpTmp.size(); j++) {
-          xUp[k][j] = xUpTmp.get(j);
+          upgoingDistance[k][j] = xUpTmp.get(j);
         }
       }
     }
@@ -106,12 +106,13 @@ public class UpDataRef implements Serializable {
   public void dumpUp(int rec) {
     System.out.println("\n     Up-going " + typeUp + " record " + rec);
     System.out.println("          p        tau        p           X");
-    for (int k = 0; k < xUp[rec].length; k++) {
+    for (int k = 0; k < upgoingDistance[rec].length; k++) {
       System.out.format(
-          "%3d  %8.6f  %8.6f  %8.6f  %9.6f\n", k, pTauUp[k], tauUp[rec][k], pXUp[k], xUp[rec][k]);
+          "%3d  %8.6f  %8.6f  %8.6f  %9.6f\n",
+          k, pTauUp[k], upgoingTau[rec][k], pXUp[k], upgoingDistance[rec][k]);
     }
-    for (int k = xUp[rec].length; k < tauUp[rec].length; k++) {
-      System.out.format("%3d  %8.6f  %8.6f\n", k, pTauUp[k], tauUp[rec][k]);
+    for (int k = upgoingDistance[rec].length; k < upgoingTau[rec].length; k++) {
+      System.out.format("%3d  %8.6f  %8.6f\n", k, pTauUp[k], upgoingTau[rec][k]);
     }
   }
 
@@ -122,17 +123,18 @@ public class UpDataRef implements Serializable {
    * @param convert Model dependent constants and conversions
    */
   public void dumpUp(ModDataRef model, ModConvert convert) {
-    for (int rec = 0; rec < tauUp.length; rec++) {
+    for (int rec = 0; rec < upgoingTau.length; rec++) {
       System.out.format(
           "\n     Up-going %c record %2d at depth %6.2f\n",
           typeUp, rec, convert.realZ(model.getDepth(rec)));
       System.out.println("          p        tau        p           X");
-      for (int k = 0; k < xUp[rec].length; k++) {
+      for (int k = 0; k < upgoingDistance[rec].length; k++) {
         System.out.format(
-            "%3d  %8.6f  %8.6f  %8.6f  %9.6f\n", k, pTauUp[k], tauUp[rec][k], pXUp[k], xUp[rec][k]);
+            "%3d  %8.6f  %8.6f  %8.6f  %9.6f\n",
+            k, pTauUp[k], upgoingTau[rec][k], pXUp[k], upgoingDistance[rec][k]);
       }
-      for (int k = xUp[rec].length; k < tauUp[rec].length; k++) {
-        System.out.format("%3d  %8.6f  %8.6f\n", k, pTauUp[k], tauUp[rec][k]);
+      for (int k = upgoingDistance[rec].length; k < upgoingTau[rec].length; k++) {
+        System.out.format("%3d  %8.6f  %8.6f\n", k, pTauUp[k], upgoingTau[rec][k]);
       }
     }
   }

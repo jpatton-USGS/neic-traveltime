@@ -71,10 +71,10 @@ public class ReadTau {
    *    Up-going branches (record 3 & table file)
    * ku -> numTauUp[2]									Number of up-going tau samples
    * pu -> pTauUp[2][numTauUp+1]				Slowness sampling for up-going branches
-   * tauu -> tauUp[2][numRec][numTauUp] Up-going tau for all depths
+   * tauu -> upgoingTau[2][numRec][numTauUp] Up-going tau for all depths
    * km -> numXUp[2]										Number of up-going distance samples
    * pux -> pXUp[2][numXUp+1]						Distances for up-going branch ends
-   * xu -> xUp[2][numRec][numXUp]				Up-going x for all depths
+   * xu -> upgoingDistance[2][numRec][numXUp]				Up-going x for all depths
    * 		numRec[2]												Derived from ndex (indexMod)
    *
    *    Tau(p), etc. for all branches (records 5 and 6)
@@ -92,7 +92,7 @@ public class ReadTau {
   double xNorm, pNorm, tNorm, rUpperMantle, rMoho, rConrad, rSurface;
   double[] pSpec, tauSpec;
   double[][] countSeg, pMod, zMod, pTauUp, pXUp, pBrn, xBrn, basisSpec;
-  double[][][] tauUp, xUp;
+  double[][][] upgoingTau, upgoingDistance;
 
   /**
    * The constructor sets up the read array and ByteBuffer to interpret the binary data in the
@@ -472,14 +472,14 @@ public class ReadTau {
     numRec[1] = numRec[1] - numRec[0];
 
     // Set up the data arrays.
-    tauUp = new double[2][][];
-    xUp = new double[2][][];
+    upgoingTau = new double[2][][];
+    upgoingDistance = new double[2][][];
     for (int i = 0; i < 2; i++) {
-      tauUp[i] = new double[numRec[i]][];
-      xUp[i] = new double[numRec[i]][];
+      upgoingTau[i] = new double[numRec[i]][];
+      upgoingDistance[i] = new double[numRec[i]][];
       for (int j = 0; j < numRec[i]; j++) {
-        tauUp[i][j] = new double[numTauUp[i]];
-        xUp[i][j] = new double[numXUp[i]];
+        upgoingTau[i][j] = new double[numTauUp[i]];
+        upgoingDistance[i][j] = new double[numXUp[i]];
       }
     }
 
@@ -500,11 +500,11 @@ public class ReadTau {
 
         if (bytesRead >= upSize[i]) {
           // Copy the data into internal arrays.
-          for (int k = 0; k < tauUp[i][j].length; k++) {
-            tauUp[i][j][k] = byteBuf.getDouble();
+          for (int k = 0; k < upgoingTau[i][j].length; k++) {
+            upgoingTau[i][j][k] = byteBuf.getDouble();
           }
-          for (int k = 0; k < xUp[i][j].length; k++) {
-            xUp[i][j][k] = byteBuf.getDouble();
+          for (int k = 0; k < upgoingDistance[i][j].length; k++) {
+            upgoingDistance[i][j][k] = byteBuf.getDouble();
           }
         }
         byteBuf.position(byteBuf.position() + recSize - upSize[i]);
@@ -682,13 +682,13 @@ public class ReadTau {
     }
 
     System.out.println("\nTauUp: " + i + " " + j);
-    for (int k = 0; k < tauUp[i][j].length; k++) {
-      System.out.println("" + k + " " + (float) tauUp[i][j][k]);
+    for (int k = 0; k < upgoingTau[i][j].length; k++) {
+      System.out.println("" + k + " " + (float) upgoingTau[i][j][k]);
     }
 
     System.out.println("\nxUp:");
-    for (int k = 0; k < xUp[i][j].length; k++) {
-      System.out.println("" + k + " " + (float) xUp[i][j][k]);
+    for (int k = 0; k < upgoingDistance[i][j].length; k++) {
+      System.out.println("" + k + " " + (float) upgoingDistance[i][j][k]);
     }
   }
 
@@ -811,7 +811,9 @@ public class ReadTau {
     int i, j;
 
     System.out.println(
-        "\n     Up-going Summary for record " + rec + " (pTauUp, tauUp, pXUp, and xUp)");
+        "\n     Up-going Summary for record "
+            + rec
+            + " (pTauUp, upgoingTau, pXUp, and upgoingDistance)");
 
     if (rec < numRec[0]) {
       i = 0;
@@ -821,13 +823,13 @@ public class ReadTau {
       j = rec - numRec[0];
     }
 
-    for (int k = 0; k < xUp[i][j].length; k++) {
+    for (int k = 0; k < upgoingDistance[i][j].length; k++) {
       System.out.format(
           "%3d  %8.6f  %8.6f  %8.6f  %9.6f\n",
-          k, pTauUp[i][k], tauUp[i][j][k], pXUp[i][k], xUp[i][j][k]);
+          k, pTauUp[i][k], upgoingTau[i][j][k], pXUp[i][k], upgoingDistance[i][j][k]);
     }
-    for (int k = xUp[i][j].length; k < tauUp[i][j].length; k++) {
-      System.out.format("%3d  %8.6f  %8.6f\n", k, pTauUp[i][k], tauUp[i][j][k]);
+    for (int k = upgoingDistance[i][j].length; k < upgoingTau[i][j].length; k++) {
+      System.out.format("%3d  %8.6f  %8.6f\n", k, pTauUp[i][k], upgoingTau[i][j][k]);
     }
   }
 

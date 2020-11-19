@@ -138,7 +138,7 @@ public class BrnDataVol {
         // Do phases that start as P.
         if (ref.typeSeg[0] == 'P') {
           // Correct ray parameter range.
-          pMax = Math.min(pRange[1], pUp.pMax);
+          pMax = Math.min(pRange[1], pUp.getMaxSlowness());
           // Screen phases that don't exist.
           if (pRange[0] >= pMax) {
             exists = false;
@@ -174,7 +174,7 @@ public class BrnDataVol {
           // Correct an up-going branch separately.
           if (ref.isUpGoing) {
             // Correct the distance.
-            xRange[1] = pUp.xEndUp;
+            xRange[1] = pUp.getDistIntSurfaceToLVZ();
 
             // Correct tau for the up-going branch.
             i = 0;
@@ -182,19 +182,19 @@ public class BrnDataVol {
               // See if we need this point.
               if (ref.pBrn[j] < pMax + TauUtil.DTOL) {
                 // pTauUp is a superset of pBrn so we need to sync them.
-                while (Math.abs(ref.pBrn[j] - pUp.pUp[i]) > TauUtil.DTOL) {
+                while (Math.abs(ref.pBrn[j] - pUp.getUpgoingRayParams()[i]) > TauUtil.DTOL) {
                   i++;
                 }
                 ;
                 // Correct the tau and x values.
                 pBrn[j] = ref.pBrn[j];
-                tauBrn[j] = pUp.tauUp[i];
+                tauBrn[j] = pUp.getUpgoingTau()[i];
                 // If this point is equal to pMax, we're done.
                 if (Math.abs(ref.pBrn[j] - pMax) <= TauUtil.DTOL) break;
                 // Otherwise, add one more point and quit.
               } else {
                 pBrn[j] = pMax;
-                tauBrn[j] = pUp.tauEndUp;
+                tauBrn[j] = pUp.getTauIntSurfaceToLVZ();
                 break;
               }
             }
@@ -218,11 +218,11 @@ public class BrnDataVol {
             for (i = 0; i < xRange.length; i++) {
               for (; m < pUp.ref.pXUp.length; m++) {
                 if (Math.abs(pRange[i] - pUp.ref.pXUp[m]) <= TauUtil.DTOL) {
-                  if (m >= pUp.xUp.length) {
+                  if (m >= pUp.getUpgoingDistance().length) {
                     exists = false;
                     return;
                   }
-                  xRange[i] += ref.signSeg * pUp.xUp[m];
+                  xRange[i] += ref.signSeg * pUp.getUpgoingDistance()[m];
                   break;
                 }
               }
@@ -240,13 +240,13 @@ public class BrnDataVol {
               // See if we need this point.
               if (ref.pBrn[j] < pMax + TauUtil.DTOL) {
                 // pTauUp is a superset of pBrn so we need to sync them.
-                while (Math.abs(ref.pBrn[j] - pUp.pUp[i]) > TauUtil.DTOL) {
+                while (Math.abs(ref.pBrn[j] - pUp.getUpgoingRayParams()[i]) > TauUtil.DTOL) {
                   i++;
                 }
                 ;
                 // Correct the tau and x values.
                 pBrn[j] = ref.pBrn[j];
-                tauBrn[j] = ref.tauBrn[j] + ref.signSeg * pUp.tauUp[i];
+                tauBrn[j] = ref.tauBrn[j] + ref.signSeg * pUp.getUpgoingTau()[i];
                 // If this point is equal to pMax, we're done.
                 if (Math.abs(ref.pBrn[j] - pMax) <= TauUtil.DTOL) break;
                 // Otherwise, add one more point and quit.
@@ -271,7 +271,7 @@ public class BrnDataVol {
           // Do phases that start as S.
         } else {
           // Correct ray parameter range.
-          pMax = Math.min(pRange[1], sUp.pMax);
+          pMax = Math.min(pRange[1], sUp.getMaxSlowness());
           // Screen phases that don't exist.
           if (pRange[0] >= pMax) {
             exists = false;
@@ -307,7 +307,7 @@ public class BrnDataVol {
           // Correct an up-going branch separately.
           if (ref.isUpGoing) {
             // Correct the distance.
-            xRange[1] = sUp.xEndUp;
+            xRange[1] = sUp.getDistIntSurfaceToLVZ();
 
             // Correct tau for the up-going branch.
             i = 0;
@@ -315,19 +315,19 @@ public class BrnDataVol {
               // See if we need this point.
               if (ref.pBrn[j] < pMax + TauUtil.DTOL) {
                 // pTauUp is a superset of pBrn so we need to sync them.
-                while (Math.abs(ref.pBrn[j] - sUp.pUp[i]) > TauUtil.DTOL) {
+                while (Math.abs(ref.pBrn[j] - sUp.getUpgoingRayParams()[i]) > TauUtil.DTOL) {
                   i++;
                 }
                 ;
                 // Correct the tau and x values.
                 pBrn[j] = ref.pBrn[j];
-                tauBrn[j] = sUp.tauUp[i];
+                tauBrn[j] = sUp.getUpgoingTau()[i];
                 // If this point is equal to pMax, we're done.
                 if (Math.abs(ref.pBrn[j] - pMax) <= TauUtil.DTOL) break;
                 // Otherwise, add one more point and quit.
               } else {
                 pBrn[j] = pMax;
-                tauBrn[j] = sUp.tauEndUp;
+                tauBrn[j] = sUp.getTauIntSurfaceToLVZ();
                 break;
               }
             }
@@ -351,11 +351,11 @@ public class BrnDataVol {
             for (i = 0; i < xRange.length; i++) {
               for (; m < sUp.ref.pXUp.length; m++) {
                 if (Math.abs(pRange[i] - sUp.ref.pXUp[m]) <= TauUtil.DTOL) {
-                  if (m >= sUp.xUp.length) {
+                  if (m >= sUp.getUpgoingDistance().length) {
                     exists = false;
                     return;
                   }
-                  xRange[i] += ref.signSeg * sUp.xUp[m];
+                  xRange[i] += ref.signSeg * sUp.getUpgoingDistance()[m];
                   break;
                 }
               }
@@ -373,13 +373,13 @@ public class BrnDataVol {
               // See if we need this point.
               if (ref.pBrn[j] < pMax + TauUtil.DTOL) {
                 // pTauUp is a superset of pBrn so we need to sync them.
-                while (Math.abs(ref.pBrn[j] - sUp.pUp[i]) > TauUtil.DTOL) {
+                while (Math.abs(ref.pBrn[j] - sUp.getUpgoingRayParams()[i]) > TauUtil.DTOL) {
                   i++;
                 }
                 ;
                 // Correct the tau and x values.
                 pBrn[j] = ref.pBrn[j];
-                tauBrn[j] = ref.tauBrn[j] + ref.signSeg * sUp.tauUp[i];
+                tauBrn[j] = ref.tauBrn[j] + ref.signSeg * sUp.getUpgoingTau()[i];
                 // If this point is equal to pMax, we're done.
                 if (Math.abs(ref.pBrn[j] - pMax) <= TauUtil.DTOL) break;
                 // Otherwise, add one more point and quit.
@@ -438,40 +438,40 @@ public class BrnDataVol {
       // it would be added.  For a down-going branch it would be
       // subtracted (because that part of the branch is cut off by the
       // source depth).
-      tau = ref.signSeg * pUp.tauEndUp;
+      tau = ref.signSeg * pUp.getTauIntSurfaceToLVZ();
       // Add the down-going part, which may not be the same as the
       // up-going piece (e.g., sP).
       if (ref.typeSeg[1] == 'P') {
-        tau += ref.countSeg * (pUp.tauEndUp + pUp.tauEndLvz);
+        tau += ref.countSeg * (pUp.getTauIntSurfaceToLVZ() + pUp.getTauIntLVZToSource());
       } else {
-        tau += ref.countSeg * (pUp.tauEndCnv);
+        tau += ref.countSeg * (pUp.getTauIntOtherSurfaceToSource());
       }
       // Add the coming-back-up part, which may not be the same as the
       // down-going piece (e.g., ScP).
       if (ref.typeSeg[2] == 'P') {
-        tau += ref.countSeg * (pUp.tauEndUp + pUp.tauEndLvz);
+        tau += ref.countSeg * (pUp.getTauIntSurfaceToLVZ() + pUp.getTauIntLVZToSource());
       } else {
-        tau += ref.countSeg * (pUp.tauEndCnv);
+        tau += ref.countSeg * (pUp.getTauIntOtherSurfaceToSource());
       }
     } else {
       // Add or subtract the up-going piece.  For a surface reflection
       // it would be added.  For a down-going branch it would be
       // subtracted (because that part of the branch is cut off by the
       // source depth).
-      tau = ref.signSeg * sUp.tauEndUp;
+      tau = ref.signSeg * sUp.getTauIntSurfaceToLVZ();
       // Add the down-going part, which may not be the same as the
       // up-going piece (e.g., sP).
       if (ref.typeSeg[1] == 'S') {
-        tau += ref.countSeg * (sUp.tauEndUp + sUp.tauEndLvz);
+        tau += ref.countSeg * (sUp.getTauIntSurfaceToLVZ() + sUp.getTauIntLVZToSource());
       } else {
-        tau += ref.countSeg * (sUp.tauEndCnv);
+        tau += ref.countSeg * (sUp.getTauIntOtherSurfaceToSource());
       }
       // Add the coming-back-up part, which may not be the same as the
       // down-going piece (e.g., ScP).
       if (ref.typeSeg[2] == 'S') {
-        tau += ref.countSeg * (sUp.tauEndUp + sUp.tauEndLvz);
+        tau += ref.countSeg * (sUp.getTauIntSurfaceToLVZ() + sUp.getTauIntLVZToSource());
       } else {
-        tau += ref.countSeg * (sUp.tauEndCnv);
+        tau += ref.countSeg * (sUp.getTauIntOtherSurfaceToSource());
       }
     }
     return tau;
@@ -491,18 +491,18 @@ public class BrnDataVol {
       // it would be added.  For a down-going branch it would be
       // subtracted (because that part of the branch is cut off by the
       // source depth).
-      x = ref.signSeg * pUp.xEndUp;
+      x = ref.signSeg * pUp.getDistIntSurfaceToLVZ();
       // Add the down-going part, which may not be the same as the
       // up-going piece (e.g., sP).
       if (ref.typeSeg[1] == 'P') {
-        x += ref.countSeg * (pUp.xEndUp + pUp.xEndLvz);
+        x += ref.countSeg * (pUp.getDistIntSurfaceToLVZ() + pUp.getDistIntLVZToSource());
       } else {
         x += ref.countSeg * (pUp.xEndCnv);
       }
       // Add the coming-back-up part, which may not be the same as the
       // down-going piece (e.g., ScP).
       if (ref.typeSeg[2] == 'P') {
-        x += ref.countSeg * (pUp.xEndUp + pUp.xEndLvz);
+        x += ref.countSeg * (pUp.getDistIntSurfaceToLVZ() + pUp.getDistIntLVZToSource());
       } else {
         x += ref.countSeg * (pUp.xEndCnv);
       }
@@ -511,18 +511,18 @@ public class BrnDataVol {
       // it would be added.  For a down-going branch it would be
       // subtracted (because that part of the branch is cut off by the
       // source depth).
-      x = ref.signSeg * sUp.xEndUp;
+      x = ref.signSeg * sUp.getDistIntSurfaceToLVZ();
       // Add the down-going part, which may not be the same as the
       // up-going piece (e.g., sP).
       if (ref.typeSeg[1] == 'S') {
-        x += ref.countSeg * (sUp.xEndUp + sUp.xEndLvz);
+        x += ref.countSeg * (sUp.getDistIntSurfaceToLVZ() + sUp.getDistIntLVZToSource());
       } else {
         x += ref.countSeg * (sUp.xEndCnv);
       }
       // Add the coming-back-up part, which may not be the same as the
       // down-going piece (e.g., ScP).
       if (ref.typeSeg[2] == 'S') {
-        x += ref.countSeg * (sUp.xEndUp + sUp.xEndLvz);
+        x += ref.countSeg * (sUp.getDistIntSurfaceToLVZ() + sUp.getDistIntLVZToSource());
       } else {
         x += ref.countSeg * (sUp.xEndCnv);
       }
@@ -666,8 +666,11 @@ public class BrnDataVol {
         if (Double.isNaN(pEnd)) {
           pEnd = pBrn[pBrn.length - 1];
           zSign = dTdDepth * ref.signSeg;
-          if (ref.typeSeg[0] == 'P') pSourceSq = Math.pow(pUp.pSource, 2d);
-          else pSourceSq = Math.pow(sUp.pSource, 2d);
+          if (ref.typeSeg[0] == 'P') {
+            pSourceSq = Math.pow(pUp.getSourceSlowness(), 2d);
+          } else {
+            pSourceSq = Math.pow(sUp.getSourceSlowness(), 2d);
+          }
         }
         // Loop over ray parameter intervals looking for arrivals.
         for (int j = 0; j < xLim[0].length; j++) {
@@ -750,8 +753,11 @@ public class BrnDataVol {
           if (Double.isNaN(pEnd)) {
             pEnd = pBrn[pBrn.length - 1];
             zSign = dTdDepth * ref.signSeg;
-            if (ref.typeSeg[0] == 'P') pSourceSq = Math.pow(pUp.pSource, 2d);
-            else pSourceSq = Math.pow(sUp.pSource, 2d);
+            if (ref.typeSeg[0] == 'P') {
+              pSourceSq = Math.pow(pUp.getSourceSlowness(), 2d);
+            } else {
+              pSourceSq = Math.pow(sUp.getSourceSlowness(), 2d);
+            }
           }
           dp = pRange[1] - pRange[0];
           dps = Math.sqrt(Math.abs(dp));

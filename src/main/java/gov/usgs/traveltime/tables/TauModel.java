@@ -945,16 +945,16 @@ public class TauModel {
   public ArrayList<Double> getXUp(char type, int index) {
     int i = 0;
     double[] p, x;
-    ArrayList<Double> xUp;
+    ArrayList<Double> upgoingDistance;
 
-    xUp = new ArrayList<Double>();
+    upgoingDistance = new ArrayList<Double>();
     p = getP(type);
     if (type == 'P') {
       if (pInts.get(index) != null) {
         x = pInts.get(index).x;
         for (int j = 0; j < x.length; j++) {
           if (pEnds[i] == p[j]) {
-            xUp.add(x[j]);
+            upgoingDistance.add(x[j]);
             i++;
           }
         }
@@ -966,7 +966,7 @@ public class TauModel {
         x = sInts.get(index).x;
         for (int j = 0; j < x.length; j++) {
           if (pEnds[i] == p[j]) {
-            xUp.add(x[j]);
+            upgoingDistance.add(x[j]);
             i++;
           }
         }
@@ -974,7 +974,7 @@ public class TauModel {
         return null;
       }
     }
-    return xUp;
+    return upgoingDistance;
   }
 
   /**
