@@ -11,61 +11,80 @@ import java.util.Arrays;
  */
 public class Decimate {
   /**
-   * A integer value containing the current number of data to keep this is global to the class
+   * A integer value containing the current number of data to keep. This is global to the class
    * because of the variance() function
    */
   private int currentNumToKeep;
 
-  int newM; // Trial number of data to keep
-  double xTarget; // Desired spacing of x array values
-  double var; // Current variance of residuals
-  double[] x; // Array to be decimated
+  /**
+   * A integer value containing the trial number of data to keep. This is global to the class
+   * because of the variance() function
+   */
+  private int trialNumToKeep;
 
   /**
-   * Calculate a decimation for the array x such that the differences between the remaining terms is
-   * as close to xTarget as possible. Note that the first and last elements of x are always kept.
-   * This method figures out the decimation, but doesn't actually implement it. This "slow" method
-   * iterates for as long as it takes to minimize the variance between the final grid and the ideal
-   * grid.
-   *
-   * @param x Array to be decimated
-   * @param xTarget Target difference between successive elements of x after decimation
-   * @return keep An array of booleans, one for each element of x--if an element is true, keep the
-   *     corresponding element of x
+   * A Double value containing the desired spacing of array values. This is global to the class
+   * because of the variance() function
    */
-  public boolean[] slowDecimation(double[] x, double xTarget) {
+  private double targetSpacing;
+
+  /**
+   * A Double value containing the current variance of residuals. This is global to the class
+   * because of the variance() function
+   */
+  private double currentVariance;
+
+  /** A Double array containing the array of values to be decimated */
+  private double[] decimationArray;
+
+  /**
+   * Calculate a decimation for the array decimationArray such that the differences between the
+   * remaining terms is as close to targetSpacing as possible. Note that the first and last elements
+   * of decimationArray are always kept. This method figures out the decimation, but doesn't
+   * actually implement it. This "slow" method iterates for as long as it takes to minimize the
+   * variance between the final grid and the ideal grid.
+   *
+   * @param decimationArray Array to be decimated
+   * @param targetSpacing A double value containing the target difference between successive
+   *     elements of decimationArray after decimation
+   * @return keep An array of booleans, one for each element of decimationArray--if an element is
+   *     true, keep the corresponding element of decimationArray
+   */
+  public boolean[] slowDecimation(double[] decimationArray, double targetSpacing) {
     int k0, k1, k2, kb = 0, nch, m1, m2, pass;
     double dx1, dx2, var1, var2;
-    boolean[] keep; // True if this x element will be kept
+    boolean[] keep; // True if this decimationArray element will be kept
 
-    this.x = x;
-    this.xTarget = xTarget;
-    keep = new boolean[x.length];
+    this.decimationArray = decimationArray;
+    this.targetSpacing = targetSpacing;
+    keep = new boolean[decimationArray.length];
     Arrays.fill(keep, true);
 
-    if (x.length > 2) {
+    if (decimationArray.length > 2) {
       // First pass.
       k1 = 0;
-      var = 0d;
+      currentVariance = 0d;
       currentNumToKeep = 0;
-      for (int j = 1; j < x.length - 1; j++) {
-        dx1 = Math.abs(x[k1] - x[j]) - xTarget;
-        dx2 = Math.abs(x[k1] - x[j + 1]) - xTarget;
+      for (int j = 1; j < decimationArray.length - 1; j++) {
+        dx1 = Math.abs(decimationArray[k1] - decimationArray[j]) - targetSpacing;
+        dx2 = Math.abs(decimationArray[k1] - decimationArray[j + 1]) - targetSpacing;
         if (Math.abs(dx2) < Math.abs(dx1)) {
           keep[j] = false;
         } else {
           if (k1 == 0) kb = j;
           k1 = j;
-          var += Math.pow(dx1, 2d);
+          currentVariance += Math.pow(dx1, 2d);
           currentNumToKeep++;
         }
       }
       // Add the last point.
-      dx1 = Math.abs(x[k1] - x[x.length - 1]) - xTarget;
-      var += Math.pow(dx1, 2d);
+      dx1 =
+          Math.abs(decimationArray[k1] - decimationArray[decimationArray.length - 1])
+              - targetSpacing;
+      currentVariance += Math.pow(dx1, 2d);
       currentNumToKeep++;
       if (TablesUtil.deBugLevel > 2) {
-        System.out.format("\nInit: %9.3e %9.3e\n", var / currentNumToKeep, doVar(keep));
+        System.out.format("\nInit: %9.3e %9.3e\n", currentVariance / currentNumToKeep, doVar(keep));
       }
 
       // second pass.
@@ -75,54 +94,58 @@ public class Decimate {
           k1 = 0;
           k2 = kb;
           nch = 0;
-          for (int j = kb + 1; j < x.length; j++) {
+          for (int j = kb + 1; j < decimationArray.length; j++) {
             if (keep[j]) {
               k0 = k1;
               k1 = k2;
               k2 = j;
               var1 = variance(k0, k1, k2, k1 - 1);
-              m1 = newM;
+              m1 = trialNumToKeep;
               var2 = variance(k0, k1, k2, k1 + 1);
-              m2 = newM;
-              if (Math.min(var1 / m1, var2 / m2) < var / currentNumToKeep) {
+              m2 = trialNumToKeep;
+              if (Math.min(var1 / m1, var2 / m2) < currentVariance / currentNumToKeep) {
                 // We've reduced the variance.  Decide what to do.
                 nch++;
                 keep[k1] = !keep[k1];
                 // Keep the smallest variance.
                 if (var1 / m1 < var2 / m2) {
                   keep[--k1] = true;
-                  var = var1;
+                  currentVariance = var1;
                   currentNumToKeep = m1;
                   if (TablesUtil.deBugLevel > 2) {
                     System.out.format(
-                        "Var1: %9.3e %9.3e %d\n", var / currentNumToKeep, doVar(keep), pass);
+                        "Var1: %9.3e %9.3e %d\n",
+                        currentVariance / currentNumToKeep, doVar(keep), pass);
                   }
                 } else if (var1 / m1 > var2 / m2) {
                   keep[++k1] = true;
-                  var = var2;
+                  currentVariance = var2;
                   currentNumToKeep = m2;
                   if (TablesUtil.deBugLevel > 2) {
                     System.out.format(
-                        "Var2: %9.3e %9.3e %d\n", var / currentNumToKeep, doVar(keep), pass);
+                        "Var2: %9.3e %9.3e %d\n",
+                        currentVariance / currentNumToKeep, doVar(keep), pass);
                   }
                 } else {
                   // If the variances are equal, keep the smallest
                   // number of data.
                   if (m1 <= m2) {
                     keep[--k1] = true;
-                    var = var1;
+                    currentVariance = var1;
                     currentNumToKeep = m1;
                     if (TablesUtil.deBugLevel > 2) {
                       System.out.format(
-                          "M1:   %9.3e %9.3e %d\n", var / currentNumToKeep, doVar(keep), pass);
+                          "M1:   %9.3e %9.3e %d\n",
+                          currentVariance / currentNumToKeep, doVar(keep), pass);
                     }
                   } else {
                     keep[++k1] = true;
-                    var = var2;
+                    currentVariance = var2;
                     currentNumToKeep = m2;
                     if (TablesUtil.deBugLevel > 2) {
                       System.out.format(
-                          "M2:   %9.3e %9.3e %d\n", var / currentNumToKeep, doVar(keep), pass);
+                          "M2:   %9.3e %9.3e %d\n",
+                          currentVariance / currentNumToKeep, doVar(keep), pass);
                     }
                   }
                 }
@@ -154,7 +177,7 @@ public class Decimate {
   public boolean[] fastDecimation(double[] p, double[] tau, double[] xRange, double xMin) {
     boolean[] keep;
     int n, iBeg, iEnd;
-    double xCur, xLast, dx, dx2, sgn, rnd, xTarget, xLeast;
+    double xCur, xLast, dx, dx2, sgn, rnd, targetSpacing, xLeast;
 
     // Scan the current sampling to see if it is already OK.
     xCur = xRange[1];
@@ -181,7 +204,7 @@ public class Decimate {
           sgn = -1d;
           rnd = 0d;
         }
-        xTarget = xRange[0] + dx;
+        targetSpacing = xRange[0] + dx;
         iBeg = 1;
         iEnd = 0;
         xLeast = TauUtil.DMAX;
@@ -189,7 +212,7 @@ public class Decimate {
         // Scan the ray parameter grid looking for points to kill.
         for (int j = 1; j <= i; j++) {
           xCur = calcX(p, tau, xRange, j);
-          if (sgn * (xCur - xTarget) > dx2) {
+          if (sgn * (xCur - targetSpacing) > dx2) {
             // This point looks OK.  See if we have points to kill.
             if (iEnd >= iBeg) {
               for (int k = iBeg; k <= iEnd; k++) keep[k] = false;
@@ -198,11 +221,11 @@ public class Decimate {
             iBeg = iEnd + 2;
             iEnd = j - 1;
             xLeast = TauUtil.DMAX;
-            xTarget += (int) ((xCur - xTarget - dx2) / dx + rnd) * dx;
+            targetSpacing += (int) ((xCur - targetSpacing - dx2) / dx + rnd) * dx;
           }
           // Look for the best points to kill.
-          if (Math.abs(xCur - xTarget) < xLeast) {
-            xLeast = Math.abs(xCur - xTarget);
+          if (Math.abs(xCur - targetSpacing) < xLeast) {
+            xLeast = Math.abs(xCur - targetSpacing);
             iEnd = j - 1;
           }
         }
@@ -245,27 +268,27 @@ public class Decimate {
   /**
    * Compute the variance of various possible values to keep.
    *
-   * @param k0 First trial x array index
-   * @param k1 Second trial x array index
-   * @param k2 Third trial x array index
-   * @param kt Alternate second trial x array index
+   * @param k0 First trial decimationArray array index
+   * @param k1 Second trial decimationArray array index
+   * @param k2 Third trial decimationArray array index
+   * @param kt Alternate second trial decimationArray array index
    * @return New trial variance of residuals
    */
   private double variance(int k0, int k1, int k2, int kt) {
     double dx1, dx2, newVar;
 
-    dx1 = Math.abs(x[k0] - x[k1]) - xTarget;
-    dx2 = Math.abs(x[k1] - x[k2]) - xTarget;
-    newVar = var - (Math.pow(dx1, 2d) + Math.pow(dx2, 2d));
+    dx1 = Math.abs(decimationArray[k0] - decimationArray[k1]) - targetSpacing;
+    dx2 = Math.abs(decimationArray[k1] - decimationArray[k2]) - targetSpacing;
+    newVar = currentVariance - (Math.pow(dx1, 2d) + Math.pow(dx2, 2d));
     if (kt > k0 && kt < k2) {
-      dx1 = Math.abs(x[k0] - x[kt]) - xTarget;
-      dx2 = Math.abs(x[kt] - x[k2]) - xTarget;
+      dx1 = Math.abs(decimationArray[k0] - decimationArray[kt]) - targetSpacing;
+      dx2 = Math.abs(decimationArray[kt] - decimationArray[k2]) - targetSpacing;
       newVar += Math.pow(dx1, 2d) + Math.pow(dx2, 2d);
-      newM = currentNumToKeep;
+      trialNumToKeep = currentNumToKeep;
     } else {
-      dx1 = Math.abs(x[k0] - x[k2]) - xTarget;
+      dx1 = Math.abs(decimationArray[k0] - decimationArray[k2]) - targetSpacing;
       newVar += Math.pow(dx1, 2d);
-      newM = currentNumToKeep - 1;
+      trialNumToKeep = currentNumToKeep - 1;
     }
     return newVar;
   }
@@ -273,20 +296,22 @@ public class Decimate {
   /**
    * Compute the variance from scratch for testing purposes.
    *
-   * @param keep For each element, if true, keep the corresponding x value
-   * @return Variance of absolute differences between kept x values minus the target difference
+   * @param keep For each element, if true, keep the corresponding decimationArray value
+   * @return Variance of absolute differences between kept decimationArray values minus the target
+   *     difference
    */
   private double doVar(boolean[] keep) {
     int i = 0, currentNumToKeep = 0;
-    double var = 0d;
+    double currentVariance = 0d;
 
-    for (int j = 1; j < x.length; j++) {
+    for (int j = 1; j < decimationArray.length; j++) {
       if (keep[j]) {
-        var += Math.pow(Math.abs(x[j] - x[i]) - xTarget, 2d);
+        currentVariance +=
+            Math.pow(Math.abs(decimationArray[j] - decimationArray[i]) - targetSpacing, 2d);
         i = j;
         currentNumToKeep++;
       }
     }
-    return var / currentNumToKeep;
+    return currentVariance / currentNumToKeep;
   }
 }

@@ -5,29 +5,35 @@ import gov.usgs.traveltime.TauUtil;
 import java.util.Arrays;
 
 /**
- * In order to sample the Earth and the ranges for both P and S waves adequately on one set of
- * slownesses, the slowness sampling will be very inhomogeneous. For any particular phase, this
- * sampling translates to a ray parameter sampling that can be so variable as to threaten the
- * stability of the tau(p) interpolation. This is addressed by decimating the ray parameter sampling
- * such that the corresponding ranges (ray travel distances) are approximately evenly spaced.
+ * This class decimates a given tau model. In order to sample the Earth and the ranges for both P
+ * and S waves adequately on one set of slownesses, the slowness sampling will be very
+ * inhomogeneous. For any particular phase, this sampling translates to a ray parameter sampling
+ * that can be so variable as to threaten the stability of the tau(p) interpolation. This is
+ * addressed by decimating the ray parameter sampling such that the corresponding ranges (ray travel
+ * distances) are approximately evenly spaced.
  *
  * @author Ray Buland
  */
-public class DecTTbranch {
-  Decimate dec;
-  TauModel finModel;
-  ModConvert convert;
+public class DecimateTTBranch {
+  /** A Decimate object containing the decimation routines */
+  private Decimate decimator;
+
+  /** A TauModel object containing the final tau-p travel time model */
+  private TauModel finalModel;
+
+  /** A ModConvert object containing the earth model dependent unit conversions and constants */
+  private ModConvert convert;
 
   /**
    * Instantiate the general decimation class.
    *
-   * @param finModel Final model
+   * @param finalModel Final model
    * @param convert Model dependent conversions
    */
-  public DecTTbranch(TauModel finModel, ModConvert convert) {
-    this.finModel = finModel;
+  public DecimateTTBranch(TauModel finalModel, ModConvert convert) {
+    this.finalModel = finalModel;
     this.convert = convert;
-    dec = new Decimate();
+    decimator = new Decimate();
   }
 
   /**
@@ -37,7 +43,7 @@ public class DecTTbranch {
    *
    * @param type Model type (P = P slowness, S = S slowness)
    */
-  public void upGoingDec(char type) {
+  public void upGoingDecimation(char type) {
     int k = -1, jLast = 0, iMin;
     double pLim, pTarget, pDiff;
     boolean[] keep, upKeep;
@@ -45,11 +51,11 @@ public class DecTTbranch {
     IntPieces piece;
 
     // Run the decimation algorithm.
-    piece = finModel.getPiece(type);
+    piece = finalModel.getPiece(type);
     keep = piece.keep;
     pOld = piece.proxyP;
     xOld = piece.proxyX;
-    upKeep = dec.slowDecimation(xOld, convert.normR(TablesUtil.DELXUP));
+    upKeep = decimator.slowDecimation(xOld, convert.normR(TablesUtil.DELXUP));
 
     // Do some setup.
     pLim = TablesUtil.PLIM * pOld[pOld.length - 1];
@@ -71,12 +77,14 @@ public class DecTTbranch {
           pTarget = pNew[k] + 0.75d * (pOld[j] - pNew[k]);
           iMin = 0;
           pDiff = TauUtil.DMAX;
+
           for (int i = jLast; i <= j; i++) {
             if (Math.abs(pOld[i] - pTarget) < pDiff) {
               iMin = i;
               pDiff = Math.abs(pOld[i] - pTarget);
             }
           }
+
           if (iMin == jLast || iMin == j) {
             // We didn't find another sample to add.
             jLast = j;
@@ -96,6 +104,7 @@ public class DecTTbranch {
         }
       }
     }
+
     piece.update(k + 1, pNew, xNew);
   }
 
@@ -115,7 +124,7 @@ public class DecTTbranch {
     IntPieces piece;
 
     // Set up.
-    piece = finModel.getPiece(branch.getRaySegmentPhaseTypes()[0]);
+    piece = finalModel.getPiece(branch.getRaySegmentPhaseTypes()[0]);
     keep = piece.keep;
     pOld = branch.getRayParameters();
     tauOld = branch.getTauValues();
@@ -129,7 +138,8 @@ public class DecTTbranch {
       if ((xOld[i + 1] - xOld[i]) * (xOld[i] - xOld[i - 1]) <= 0d) {
         // Got one.  Decimate the branch up to the caustic.
         if (i - 2 > beg) {
-          downKeep = dec.slowDecimation(Arrays.copyOfRange(xOld, beg, i - 1), xTarget);
+          downKeep = decimator.slowDecimation(Arrays.copyOfRange(xOld, beg, i - 1), xTarget);
+
           for (int j = beg, l = 0; j < i - 1; j++, l++) {
             if (downKeep[l]) {
               pNew[++k] = pOld[j];
@@ -138,6 +148,7 @@ public class DecTTbranch {
               keep[j + pOffset] = true;
             }
           }
+
           // Add in the few points we're going to take no matter what.
           beg = Math.min(i + 2, xOld.length);
           for (int j = i - 1; j < beg; j++) {
@@ -150,9 +161,10 @@ public class DecTTbranch {
         }
       }
     }
+
     // Decimate after the last caustic (or the whole branch if there
     // are no caustics.
-    downKeep = dec.slowDecimation(Arrays.copyOfRange(xOld, beg, xOld.length), xTarget);
+    downKeep = decimator.slowDecimation(Arrays.copyOfRange(xOld, beg, xOld.length), xTarget);
     for (int j = beg, l = 0; j < xOld.length; j++, l++) {
       if (downKeep[l]) {
         pNew[++k] = pOld[j];
@@ -161,6 +173,7 @@ public class DecTTbranch {
         keep[j + pOffset] = true;
       }
     }
+
     // Update the branch data with the decimated versions.
     branch.update(k + 1, pNew, tauNew, xNew);
   }

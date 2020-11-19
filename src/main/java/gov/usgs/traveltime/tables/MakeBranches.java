@@ -35,7 +35,7 @@ public class MakeBranches {
   ArrayList<BranchData> branches;
   TauModel finModel;
   ModConvert convert;
-  DecTTbranch decimate;
+  DecimateTTBranch decimate;
   Spline spline;
 
   /**
@@ -44,7 +44,7 @@ public class MakeBranches {
    * @param finModel Final tau model of the Earth
    * @param decimate Branch decimation class
    */
-  public MakeBranches(TauModel finModel, DecTTbranch decimate) {
+  public MakeBranches(TauModel finModel, DecimateTTBranch decimate) {
     this.finModel = finModel;
     convert = finModel.convert;
     slowOffset = finModel.sPieces.p.length - 1;
