@@ -4,13 +4,18 @@ import gov.usgs.traveltime.TauUtil;
 import java.util.Arrays;
 
 /**
- * Compute a decimation that makes the samples of an array approximately evenly spaced (at a
- * predefined spacing).
+ * The Decimate class computes a decimation that makes the samples of an array approximately evenly
+ * spaced (at a predefined spacing).
  *
  * @author Ray Buland
  */
 public class Decimate {
-  int m; // Current number of data to keep
+  /**
+   * A integer value containing the current number of data to keep this is global to the class
+   * because of the variance() function
+   */
+  private int currentNumToKeep;
+
   int newM; // Trial number of data to keep
   double xTarget; // Desired spacing of x array values
   double var; // Current variance of residuals
@@ -42,7 +47,7 @@ public class Decimate {
       // First pass.
       k1 = 0;
       var = 0d;
-      m = 0;
+      currentNumToKeep = 0;
       for (int j = 1; j < x.length - 1; j++) {
         dx1 = Math.abs(x[k1] - x[j]) - xTarget;
         dx2 = Math.abs(x[k1] - x[j + 1]) - xTarget;
@@ -52,19 +57,19 @@ public class Decimate {
           if (k1 == 0) kb = j;
           k1 = j;
           var += Math.pow(dx1, 2d);
-          m++;
+          currentNumToKeep++;
         }
       }
       // Add the last point.
       dx1 = Math.abs(x[k1] - x[x.length - 1]) - xTarget;
       var += Math.pow(dx1, 2d);
-      m++;
+      currentNumToKeep++;
       if (TablesUtil.deBugLevel > 2) {
-        System.out.format("\nInit: %9.3e %9.3e\n", var / m, doVar(keep));
+        System.out.format("\nInit: %9.3e %9.3e\n", var / currentNumToKeep, doVar(keep));
       }
 
       // second pass.
-      if (m > 1) {
+      if (currentNumToKeep > 1) {
         pass = 1;
         do {
           k1 = 0;
@@ -79,7 +84,7 @@ public class Decimate {
               m1 = newM;
               var2 = variance(k0, k1, k2, k1 + 1);
               m2 = newM;
-              if (Math.min(var1 / m1, var2 / m2) < var / m) {
+              if (Math.min(var1 / m1, var2 / m2) < var / currentNumToKeep) {
                 // We've reduced the variance.  Decide what to do.
                 nch++;
                 keep[k1] = !keep[k1];
@@ -87,16 +92,18 @@ public class Decimate {
                 if (var1 / m1 < var2 / m2) {
                   keep[--k1] = true;
                   var = var1;
-                  m = m1;
+                  currentNumToKeep = m1;
                   if (TablesUtil.deBugLevel > 2) {
-                    System.out.format("Var1: %9.3e %9.3e %d\n", var / m, doVar(keep), pass);
+                    System.out.format(
+                        "Var1: %9.3e %9.3e %d\n", var / currentNumToKeep, doVar(keep), pass);
                   }
                 } else if (var1 / m1 > var2 / m2) {
                   keep[++k1] = true;
                   var = var2;
-                  m = m2;
+                  currentNumToKeep = m2;
                   if (TablesUtil.deBugLevel > 2) {
-                    System.out.format("Var2: %9.3e %9.3e %d\n", var / m, doVar(keep), pass);
+                    System.out.format(
+                        "Var2: %9.3e %9.3e %d\n", var / currentNumToKeep, doVar(keep), pass);
                   }
                 } else {
                   // If the variances are equal, keep the smallest
@@ -104,16 +111,18 @@ public class Decimate {
                   if (m1 <= m2) {
                     keep[--k1] = true;
                     var = var1;
-                    m = m1;
+                    currentNumToKeep = m1;
                     if (TablesUtil.deBugLevel > 2) {
-                      System.out.format("M1:   %9.3e %9.3e %d\n", var / m, doVar(keep), pass);
+                      System.out.format(
+                          "M1:   %9.3e %9.3e %d\n", var / currentNumToKeep, doVar(keep), pass);
                     }
                   } else {
                     keep[++k1] = true;
                     var = var2;
-                    m = m2;
+                    currentNumToKeep = m2;
                     if (TablesUtil.deBugLevel > 2) {
-                      System.out.format("M2:   %9.3e %9.3e %d\n", var / m, doVar(keep), pass);
+                      System.out.format(
+                          "M2:   %9.3e %9.3e %d\n", var / currentNumToKeep, doVar(keep), pass);
                     }
                   }
                 }
@@ -122,7 +131,7 @@ public class Decimate {
             }
           }
           pass++;
-        } while (nch > 0 && m > 1);
+        } while (nch > 0 && currentNumToKeep > 1);
       }
     }
     return keep;
@@ -252,11 +261,11 @@ public class Decimate {
       dx1 = Math.abs(x[k0] - x[kt]) - xTarget;
       dx2 = Math.abs(x[kt] - x[k2]) - xTarget;
       newVar += Math.pow(dx1, 2d) + Math.pow(dx2, 2d);
-      newM = m;
+      newM = currentNumToKeep;
     } else {
       dx1 = Math.abs(x[k0] - x[k2]) - xTarget;
       newVar += Math.pow(dx1, 2d);
-      newM = m - 1;
+      newM = currentNumToKeep - 1;
     }
     return newVar;
   }
@@ -268,16 +277,16 @@ public class Decimate {
    * @return Variance of absolute differences between kept x values minus the target difference
    */
   private double doVar(boolean[] keep) {
-    int i = 0, m = 0;
+    int i = 0, currentNumToKeep = 0;
     double var = 0d;
 
     for (int j = 1; j < x.length; j++) {
       if (keep[j]) {
         var += Math.pow(Math.abs(x[j] - x[i]) - xTarget, 2d);
         i = j;
-        m++;
+        currentNumToKeep++;
       }
     }
-    return var / m;
+    return var / currentNumToKeep;
   }
 }

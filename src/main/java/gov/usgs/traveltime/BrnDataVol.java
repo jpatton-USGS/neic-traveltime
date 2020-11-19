@@ -201,7 +201,7 @@ public class BrnDataVol {
 
             // Decimate the up-going branch.
             pBrn = pUp.realUp(pBrn, tauBrn, xRange, xMin);
-            tauBrn = pUp.getDecTau();
+            tauBrn = pUp.getDecimatedUpBranchTau();
 
             // Spline it.
             len = pBrn.length;
@@ -216,8 +216,8 @@ public class BrnDataVol {
             // Correct distance.
             int m = 0;
             for (i = 0; i < xRange.length; i++) {
-              for (; m < pUp.ref.pXUp.length; m++) {
-                if (Math.abs(pRange[i] - pUp.ref.pXUp[m]) <= TauUtil.DTOL) {
+              for (; m < pUp.getUpDataReference().pXUp.length; m++) {
+                if (Math.abs(pRange[i] - pUp.getUpDataReference().pXUp[m]) <= TauUtil.DTOL) {
                   if (m >= pUp.getUpgoingDistance().length) {
                     exists = false;
                     return;
@@ -226,7 +226,7 @@ public class BrnDataVol {
                   break;
                 }
               }
-              if (m >= pUp.ref.pXUp.length) xRange[i] = lastX();
+              if (m >= pUp.getUpDataReference().pXUp.length) xRange[i] = lastX();
             }
             // Set up the diffracted branch distance range.
             if (ref.hasDiff) {
@@ -334,7 +334,7 @@ public class BrnDataVol {
 
             // Decimate the up-going branch.
             pBrn = sUp.realUp(pBrn, tauBrn, xRange, xMin);
-            tauBrn = sUp.getDecTau();
+            tauBrn = sUp.getDecimatedUpBranchTau();
 
             // Spline it.
             len = pBrn.length;
@@ -349,8 +349,8 @@ public class BrnDataVol {
             // Correct distance.
             int m = 0;
             for (i = 0; i < xRange.length; i++) {
-              for (; m < sUp.ref.pXUp.length; m++) {
-                if (Math.abs(pRange[i] - sUp.ref.pXUp[m]) <= TauUtil.DTOL) {
+              for (; m < sUp.getUpDataReference().pXUp.length; m++) {
+                if (Math.abs(pRange[i] - sUp.getUpDataReference().pXUp[m]) <= TauUtil.DTOL) {
                   if (m >= sUp.getUpgoingDistance().length) {
                     exists = false;
                     return;
@@ -359,7 +359,7 @@ public class BrnDataVol {
                   break;
                 }
               }
-              if (m >= sUp.ref.pXUp.length) xRange[i] = lastX();
+              if (m >= sUp.getUpDataReference().pXUp.length) xRange[i] = lastX();
             }
             // Set up the diffracted branch distance range.
             if (ref.hasDiff) {
@@ -497,14 +497,14 @@ public class BrnDataVol {
       if (ref.typeSeg[1] == 'P') {
         x += ref.countSeg * (pUp.getDistIntSurfaceToLVZ() + pUp.getDistIntLVZToSource());
       } else {
-        x += ref.countSeg * (pUp.xEndCnv);
+        x += ref.countSeg * (pUp.getDistIntOtherSurfaceToSource());
       }
       // Add the coming-back-up part, which may not be the same as the
       // down-going piece (e.g., ScP).
       if (ref.typeSeg[2] == 'P') {
         x += ref.countSeg * (pUp.getDistIntSurfaceToLVZ() + pUp.getDistIntLVZToSource());
       } else {
-        x += ref.countSeg * (pUp.xEndCnv);
+        x += ref.countSeg * (pUp.getDistIntOtherSurfaceToSource());
       }
     } else {
       // Add or subtract the up-going piece.  For a surface reflection
@@ -517,14 +517,14 @@ public class BrnDataVol {
       if (ref.typeSeg[1] == 'S') {
         x += ref.countSeg * (sUp.getDistIntSurfaceToLVZ() + sUp.getDistIntLVZToSource());
       } else {
-        x += ref.countSeg * (sUp.xEndCnv);
+        x += ref.countSeg * (sUp.getDistIntOtherSurfaceToSource());
       }
       // Add the coming-back-up part, which may not be the same as the
       // down-going piece (e.g., ScP).
       if (ref.typeSeg[2] == 'S') {
         x += ref.countSeg * (sUp.getDistIntSurfaceToLVZ() + sUp.getDistIntLVZToSource());
       } else {
-        x += ref.countSeg * (sUp.xEndCnv);
+        x += ref.countSeg * (sUp.getDistIntOtherSurfaceToSource());
       }
     }
     return x;
