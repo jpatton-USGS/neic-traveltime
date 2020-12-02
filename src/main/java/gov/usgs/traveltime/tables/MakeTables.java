@@ -130,8 +130,8 @@ public class MakeTables {
       }
       // Decimate the default sampling for the up-going branches.
       decimate = new DecimateTTBranch(finModel, convert);
-      decimate.upGoingDecimation('P');
-      decimate.upGoingDecimation('S');
+      decimate.upGoingBranchDecimation('P');
+      decimate.upGoingBranchDecimation('S');
       if (TablesUtil.deBugLevel > 0) {
         if (TablesUtil.deBugLevel > 2) {
           finModel.pPieces.printDec();

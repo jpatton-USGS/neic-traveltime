@@ -404,7 +404,7 @@ public class MakeBranches {
             xFactor
                 * Math.max(
                     finModel.getDelX(typeSeg[1], shIndex), finModel.getDelX(typeSeg[2], shIndex));
-        decimate.downGoingDec(branch, xTarget, minBrnP);
+        decimate.downGoingBranchDecimation(branch, xTarget, minBrnP);
         // Create the interpolation basis functions.
         spline.basisSet(branch.getRayParameters(), branch.getBasisCoefficients());
         // We need to name each sub-branch.
@@ -451,7 +451,7 @@ public class MakeBranches {
             * Math.max(
                 finModel.getNextDelX(typeSeg[1], endShell),
                 finModel.getNextDelX(typeSeg[2], endShell));
-    decimate.downGoingDec(branch, xTarget, 0);
+    decimate.downGoingBranchDecimation(branch, xTarget, 0);
     // Create the interpolation basis functions.
     spline.basisSet(branch.getRayParameters(), branch.getBasisCoefficients());
     if (TablesUtil.deBugLevel > 0) {
@@ -552,7 +552,7 @@ public class MakeBranches {
                     * Math.max(
                         finModel.getDelX(typeSeg[1], shIndex1),
                         finModel.getDelX(typeSeg[2], shIndex2));
-            decimate.downGoingDec(branch, xTarget, minBrnP);
+            decimate.downGoingBranchDecimation(branch, xTarget, minBrnP);
             // Create the interpolation basis functions.
             spline.basisSet(branch.getRayParameters(), branch.getBasisCoefficients());
             // We need to name each sub-branch.

@@ -134,7 +134,7 @@ public class TauModel {
    * @return The Earth model name
    */
   public String getModelName() {
-    return refModel.earthModel;
+    return refModel.getEarthModelName();
   }
 
   /**

@@ -18,8 +18,8 @@ public class DecimateTTBranch {
   /** A Decimate object containing the decimation routines */
   private Decimate decimator;
 
-  /** A TauModel object containing the final tau-p travel time model */
-  private TauModel finalModel;
+  /** A TauModel object containing the tau-p travel time model to use */
+  private TauModel tauModel;
 
   /** A ModConvert object containing the earth model dependent unit conversions and constants */
   private ModConvert convert;
@@ -27,40 +27,37 @@ public class DecimateTTBranch {
   /**
    * Instantiate the general decimation class.
    *
-   * @param finalModel Final model
-   * @param convert Model dependent conversions
+   * @param tauModel A TauModel object containing the model to use.
+   * @param convert A ModConvert object containing the model dependent conversions
    */
-  public DecimateTTBranch(TauModel finalModel, ModConvert convert) {
-    this.finalModel = finalModel;
+  public DecimateTTBranch(TauModel tauModel, ModConvert convert) {
+    this.tauModel = tauModel;
     this.convert = convert;
     decimator = new Decimate();
   }
 
   /**
-   * Figure the decimation for a proxy for the up-going branches range spacing. Note that the
-   * eventual over all decimation will be a logical AND of the decimation figured here and the
-   * decimations for all the other branches.
+   * Function to calculate the upgoing decimation. Figure the decimation for a proxy for the
+   * up-going branches range spacing. Note that the eventual over all decimation will be a logical
+   * AND of the decimation figured here and the decimations for all the other branches.
    *
-   * @param type Model type (P = P slowness, S = S slowness)
+   * @param type A character indicating the desired Model type, 'P' = P slowness, 'S' = S slowness
    */
-  public void upGoingDecimation(char type) {
+  public void upGoingBranchDecimation(char type) {
     int k = -1, jLast = 0, iMin;
-    double pLim, pTarget, pDiff;
-    boolean[] keep, upKeep;
-    double[] pOld, xOld, pNew, xNew;
-    IntPieces piece;
+    double pTarget, pDiff;
 
     // Run the decimation algorithm.
-    piece = finalModel.getPiece(type);
-    keep = piece.keep;
-    pOld = piece.proxyP;
-    xOld = piece.proxyX;
-    upKeep = decimator.slowDecimation(xOld, convert.normR(TablesUtil.DELXUP));
+    IntPieces piece = tauModel.getPiece(type);
+    boolean[] keep = piece.keep;
+    double[] pOld = piece.proxyP;
+    double[] xOld = piece.proxyX;
+    boolean[] upKeep = decimator.slowDecimation(xOld, convert.normR(TablesUtil.DELXUP));
 
     // Do some setup.
-    pLim = TablesUtil.PLIM * pOld[pOld.length - 1];
-    pNew = new double[pOld.length];
-    xNew = new double[xOld.length];
+    double pLim = TablesUtil.PLIM * pOld[pOld.length - 1];
+    double[] pNew = new double[pOld.length];
+    double[] xNew = new double[xOld.length];
 
     // Actually do the decimation.
     for (int j = 0; j < xOld.length; j++) {
@@ -109,54 +106,56 @@ public class DecimateTTBranch {
   }
 
   /**
-   * Figure the decimation for a down-going branch range spacing. Note that the eventual over all
-   * decimation will be a logical AND of the decimation figured here and the decimations for all the
-   * other branches.
+   * Function to figure the decimation for a down-going branch range spacing. Note that the eventual
+   * over all decimation will be a logical AND of the decimation figured here and the decimations
+   * for all the other branches.
    *
-   * @param branch Branch data
-   * @param xTarget Non-dimensional range spacing target
-   * @param pOffset Base slowness index in the merged slowness array
+   * @param branch A BranchData object containing the branch data
+   * @param rangeTarget A double containing the non-dimensional range spacing target
+   * @param baseSlownessIndex An integer containing the base slowness index in the merged slowness
+   *     array
    */
-  public void downGoingDec(BranchData branch, double xTarget, int pOffset) {
+  public void downGoingBranchDecimation(
+      BranchData branch, double rangeTarget, int baseSlownessIndex) {
     int beg = 0, k = -1;
-    boolean[] keep, downKeep;
-    double[] pOld, tauOld, xOld, pNew, tauNew, xNew;
-    IntPieces piece;
+    boolean[] downKeep;
 
     // Set up.
-    piece = finalModel.getPiece(branch.getRaySegmentPhaseTypes()[0]);
-    keep = piece.keep;
-    pOld = branch.getRayParameters();
-    tauOld = branch.getTauValues();
-    xOld = branch.getRayTravelDistances();
-    pNew = new double[pOld.length];
-    tauNew = new double[tauOld.length];
-    xNew = new double[xOld.length];
+    IntPieces piece = tauModel.getPiece(branch.getRaySegmentPhaseTypes()[0]);
+    boolean[] keep = piece.keep;
+    double[] pOld = branch.getRayParameters();
+    double[] tauOld = branch.getTauValues();
+    double[] xOld = branch.getRayTravelDistances();
+    double[] pNew = new double[pOld.length];
+    double[] tauNew = new double[tauOld.length];
+    double[] xNew = new double[xOld.length];
 
     // Look for caustics.
     for (int i = 1; i < xOld.length - 1; i++) {
       if ((xOld[i + 1] - xOld[i]) * (xOld[i] - xOld[i - 1]) <= 0d) {
         // Got one.  Decimate the branch up to the caustic.
         if (i - 2 > beg) {
-          downKeep = decimator.slowDecimation(Arrays.copyOfRange(xOld, beg, i - 1), xTarget);
+          downKeep = decimator.slowDecimation(Arrays.copyOfRange(xOld, beg, i - 1), rangeTarget);
 
           for (int j = beg, l = 0; j < i - 1; j++, l++) {
             if (downKeep[l]) {
               pNew[++k] = pOld[j];
               tauNew[k] = tauOld[j];
               xNew[k] = xOld[j];
-              keep[j + pOffset] = true;
+              keep[j + baseSlownessIndex] = true;
             }
           }
 
           // Add in the few points we're going to take no matter what.
           beg = Math.min(i + 2, xOld.length);
+
           for (int j = i - 1; j < beg; j++) {
             pNew[++k] = pOld[j];
             tauNew[k] = tauOld[j];
             xNew[k] = xOld[j];
-            keep[j + pOffset] = true;
+            keep[j + baseSlownessIndex] = true;
           }
+
           i = beg;
         }
       }
@@ -164,13 +163,14 @@ public class DecimateTTBranch {
 
     // Decimate after the last caustic (or the whole branch if there
     // are no caustics.
-    downKeep = decimator.slowDecimation(Arrays.copyOfRange(xOld, beg, xOld.length), xTarget);
+    downKeep = decimator.slowDecimation(Arrays.copyOfRange(xOld, beg, xOld.length), rangeTarget);
+
     for (int j = beg, l = 0; j < xOld.length; j++, l++) {
       if (downKeep[l]) {
         pNew[++k] = pOld[j];
         tauNew[k] = tauOld[j];
         xNew[k] = xOld[j];
-        keep[j + pOffset] = true;
+        keep[j + baseSlownessIndex] = true;
       }
     }
 

@@ -15,9 +15,16 @@ import java.util.Scanner;
  * @author Ray Buland
  */
 public class EarthModel {
-  String earthModel; // Model name
-  double rInnerCore = ShellName.INNER_CORE.defRadius();
-  double rOuterCore = ShellName.OUTER_CORE.defRadius();
+  /** A String holding the name of this earth model */
+  private String earthModelName;
+
+  /** A double containing the inner core radius */
+  private double innerCoreRadius = ShellName.INNER_CORE.defRadius();
+
+  /** A double containing the outer core radius */
+  private double outerCoreRadius = ShellName.OUTER_CORE.defRadius();
+
+  
   double rUpperMantle = ShellName.LOWER_MANTLE.defRadius();
   double rMoho = ShellName.UPPER_MANTLE.defRadius();
   double rConrad = ShellName.LOWER_CRUST.defRadius();
@@ -36,14 +43,23 @@ public class EarthModel {
   ModConvert convert;
 
   /**
+   * Function to return the name of this earth model.
+   *
+   * @return A String containing the name of this earth model.
+   */
+  public String getEarthModelName() {
+    return earthModelName;
+  }
+
+  /**
    * It doesn't take much to get started. In this version, we're going to read in a reference Earth
    * model from a file.
    *
-   * @param earthModel Name of the Earth model
+   * @param earthModelName Name of the Earth model
    * @param isCubic True if cubic spline interpolation is to be used
    */
-  public EarthModel(String earthModel, boolean isCubic) {
-    this.earthModel = earthModel;
+  public EarthModel(String earthModelName, boolean isCubic) {
+    this.earthModelName = earthModelName;
     model = new ArrayList<ModelSample>();
     shells = new ArrayList<ModelShell>();
     interp = new ModelInterp(model, shells, isCubic);
@@ -58,7 +74,7 @@ public class EarthModel {
   public EarthModel(EarthModel refModel, ModConvert convert) {
     this.refModel = refModel;
     this.convert = convert;
-    earthModel = refModel.earthModel;
+    earthModelName = refModel.getEarthModelName();
     model = new ArrayList<ModelSample>();
     shells = new ArrayList<ModelShell>();
     critical = new ArrayList<CriticalSlowness>();
@@ -93,9 +109,13 @@ public class EarthModel {
 
     // Read the header.
     modelCheck = scan.next();
-    if (!modelCheck.equals(earthModel)) {
+    if (!modelCheck.equals(earthModelName)) {
       System.out.println(
-          "\n***** Error: model name mismatch (" + earthModel + " != " + modelCheck + ") *****\n");
+          "\n***** Error: model name mismatch ("
+              + earthModelName
+              + " != "
+              + modelCheck
+              + ") *****\n");
       scan.close();
       return TtStatus.BAD_MODEL_FILE;
     }
@@ -350,11 +370,11 @@ public class EarthModel {
     for (int j = 0; j < shells.size(); j++) {
       rDisc = shells.get(j).rTop;
       iTop = shells.get(j).iTop;
-      if (Math.abs(rDisc - rInnerCore) < Math.abs(tempIC - rInnerCore)) {
+      if (Math.abs(rDisc - innerCoreRadius) < Math.abs(tempIC - innerCoreRadius)) {
         tempIC = rDisc;
         innerCore = model.get(iTop);
       }
-      if (Math.abs(rDisc - rOuterCore) < Math.abs(tempOC - rOuterCore)) {
+      if (Math.abs(rDisc - outerCoreRadius) < Math.abs(tempOC - outerCoreRadius)) {
         tempOC = rDisc;
         outerCore = model.get(iTop);
       }
@@ -377,8 +397,8 @@ public class EarthModel {
     }
 
     // Set the radii.
-    rInnerCore = innerCore.r;
-    rOuterCore = outerCore.r;
+    innerCoreRadius = innerCore.r;
+    outerCoreRadius = outerCore.r;
     rUpperMantle = upperMantle.r;
     rMoho = moho.r;
     rConrad = conrad.r;
@@ -389,9 +409,9 @@ public class EarthModel {
       shell = shells.get(j);
       if (!shell.isDisc) {
         rDisc = shell.rTop;
-        if (rDisc <= rInnerCore) {
+        if (rDisc <= innerCoreRadius) {
           shell.addName(ShellName.INNER_CORE, Double.NaN, TablesUtil.DELX[0]);
-        } else if (rDisc <= rOuterCore) {
+        } else if (rDisc <= outerCoreRadius) {
           shell.addName(ShellName.OUTER_CORE, Double.NaN, TablesUtil.DELX[1]);
         } else if (rDisc <= rUpperMantle) {
           shell.addName(ShellName.LOWER_MANTLE, Double.NaN, TablesUtil.DELX[2]);
@@ -410,9 +430,9 @@ public class EarthModel {
       shell = shells.get(j);
       if (shell.isDisc) {
         rDisc = shell.rTop;
-        if (rDisc == rInnerCore) {
+        if (rDisc == innerCoreRadius) {
           shell.addName(ShellName.INNER_CORE_BOUNDARY, Double.NaN, TablesUtil.DELX[1]);
-        } else if (rDisc == rOuterCore) {
+        } else if (rDisc == outerCoreRadius) {
           shell.addName(ShellName.CORE_MANTLE_BOUNDARY, Double.NaN, TablesUtil.DELX[2]);
         } else if (rDisc == rMoho) {
           shell.addName(ShellName.MOHO_DISCONTINUITY, Double.NaN, TablesUtil.DELX[4]);
@@ -584,7 +604,7 @@ public class EarthModel {
   public void printModel() {
     System.out.format(
         "\n%s %d %7.2f %7.2f %7.2f %7.2f %7.2f %7.2f\n",
-        earthModel,
+        earthModelName,
         model.size(),
         innerCore.r,
         outerCore.r,
@@ -609,7 +629,7 @@ public class EarthModel {
       if (nice) {
         System.out.format(
             "\n%s %d %7.2f %7.2f %7.2f %7.2f %7.2f %7.2f\n",
-            refModel.earthModel,
+            refModel.getEarthModelName(),
             model.size(),
             convert.realZ(refModel.surface.z),
             convert.realZ(refModel.conrad.z),
@@ -621,7 +641,7 @@ public class EarthModel {
       } else {
         System.out.format(
             "\n%s %d %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f\n",
-            refModel.earthModel,
+            refModel.getEarthModelName(),
             model.size(),
             refModel.surface.z,
             refModel.conrad.z,
@@ -642,7 +662,7 @@ public class EarthModel {
     } else {
       System.out.format(
           "\n%s %d %7.2f %7.2f %7.2f %7.2f %7.2f %7.2f\n",
-          refModel.earthModel,
+          refModel.getEarthModelName(),
           model.size(),
           refModel.innerCore.r,
           refModel.outerCore.r,
